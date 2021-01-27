@@ -1,2 +1,2 @@
-# DeepLearning
-深度学习在NLP,CV方面的实践
+# MachineLearning
+机器学习算法实现和Kaggle题目练习
