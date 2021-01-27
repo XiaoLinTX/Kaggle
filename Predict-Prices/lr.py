@@ -4,7 +4,7 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-01-23 21:50:58
 LastEditors: ZhangHongYu
-LastEditTime: 2021-01-27 11:13:45
+LastEditTime: 2021-01-27 11:23:31
 '''
 import pandas as pd
 import torch
@@ -145,8 +145,8 @@ def train_and_pred(
     )
     semilogy(range(1, num_epoches+1), train_ls, 'epochs', 'rmse')
     print('train rmse %f' % train_ls[-1])
-    joblib.dump(net, '/mnt/mydisk/LocalCode/model/PredictPrices')
-    net = joblib.load('/mnt/mydisk/LocalCode/model/PredictPrices')
+    joblib.dump(net, '/mnt/mydisk/LocalCode/model/PredictPrices/model.json')
+    net = joblib.load('/mnt/mydisk/LocalCode/model/PredictPrices/model.json')
     pred = net(test_features).detach().numpy()
     test_data['SalePrice'] = pd.Series(pred.reshape(1, -1)[0])
     submission = pd.concat([test_data['Id'], test_data['SalePrice']])
