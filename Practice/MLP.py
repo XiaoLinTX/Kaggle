@@ -4,7 +4,7 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-01-21 14:26:54
 LastEditors: ZhangHongYu
-LastEditTime: 2021-01-23 22:27:51
+LastEditTime: 2021-01-27 11:14:22
 '''
 '''
 Descripttion: 
@@ -14,6 +14,10 @@ Date: 2021-01-11 20:06:48
 LastEditors: ZhangHongYu
 LastEditTime: 2021-01-20 22:18:25
 '''
+
+
+
+
 import torch
 import torchvision
 import torchvision.transforms as transforms
@@ -23,69 +27,82 @@ import matplotlib.pyplot as plt
 import torch.nn as nn
 import numpy as np
 import sys
-
 class LinearNet(nn.Module):
     def __init__(self, num_inputs, num_outputs, num_hiddens):
         super().__init__()
         self.num_inputs = num_inputs
         self.num_outputs = num_outputs
         self.num_hiddens = num_hiddens
-        self.W1 = torch.tensor(np.random.normal(0, 0.01, (num_inputs, num_hiddens)),dtype=torch.float)
+        self.W1 = torch.tensor(np.random.normal(
+            0, 0.01, (num_inputs, num_hiddens)), dtype=torch.float)
         self.b1 = torch.zeros(num_hiddens, dtype=torch.float)
-        self.W2 = torch.tensor(np.random.normal(0, 0.01, (num_hiddens, num_outputs)),dtype=torch.float)
+        self.W2 = torch.tensor(np.random.normal(
+            0, 0.01, (num_hiddens, num_outputs)), dtype=torch.float)
         self.b2 = torch.zeros(num_outputs, dtype=torch.float)
-        self.W1.requires_grad_(requires_grad = True)
-        self.b1.requires_grad_(requires_grad = True)
-        self.W2.requires_grad_(requires_grad = True)
-        self.b2.requires_grad_(requires_grad = True)
+        self.W1.requires_grad_(requires_grad=True)
+        self.b1.requires_grad_(requires_grad=True)
+        self.W2.requires_grad_(requires_grad=True)
+        self.b2.requires_grad_(requires_grad=True)
         self.params = [self.W1, self.b1, self.W2, self.b2]
     #此时X行n为样本个数，列m为输出的预测标签个数
+
     def relu(self, X):
-        return torch.max(input=X, other=torch.tensor(0.0)) #两个tensor取最大，运用广播机制
+        # 两个tensor取最大，运用广播机制
+        return torch.max(input=X, other=torch.tensor(0.0))
+
     def softmax(self, X):
-        X_exp = X.exp()  #先对矩阵所有元素取exp
-        partition = X_exp.sum(dim = 1, keepdim = True) #计算矩阵每行的和，保留列，得到n*1矩阵
-        return X_exp / partition #广播机制，n*m可相除以n*1
+        X_exp = X.exp()  # 先对矩阵所有元素取exp
+        partition = X_exp.sum(dim=1, keepdim=True)  # 计算矩阵每行的和，保留列，得到n*1矩阵
+        return X_exp / partition  # 广播机制，n*m可相除以n*1
+
     def forward(self, X):
-        H =  self.relu( torch.mm(X.view((-1,self.num_inputs)),self.W1)+self.b1)
-        O = torch.mm(H,self.W2)+self.b2
+        H = self.relu(torch.mm(X.view((-1, self.num_inputs)), self.W1)+self.b1)
+        O = torch.mm(H, self.W2)+self.b2
         return self.softmax(O)
 
-def cross_entropy(y_hat,y):  #一个batch的样本
+
+def cross_entropy(y_hat, y):  # 一个batch的样本
     #y和y_hat维度不一样
     #y_hat = torch.Tensor([[0.1,0.3,0.6],[0.3,0.2,0.5]]) 给的是两个样本的预测标签的概率分布
-    #y = torch.LongTensor([0,2]) 为两个样本的标签标量 
+    #y = torch.LongTensor([0,2]) 为两个样本的标签标量
     # y 要转换为[[1,0,0],[0,1,0]]即两个样本的实际标签的独热编码
     #欲对每个标签，都计算 sigma j(yj*log(y_hatj))
     #这个式子表示为 y_hat.gather(1,y.view(-1,1)) 也就是[[0.1],[0.5]]，
     # index=[0,2]在列方向上索引选出0.1，0.5，最后结果还是保持为以列的形式存放
-    return - torch.log(y_hat.gather(1, y.view(-1,1)))
+    return - torch.log(y_hat.gather(1, y.view(-1, 1)))
+
 
 def accuracy(y_hat, y):
-    return (y_hat.argmax(dim = 1) == y).float().mean().item()
+    return (y_hat.argmax(dim=1) == y).float().mean().item()
+
 
 def evaluate_accuracy(data_iter, net):
     acc_sum, n = 0.0, 0
     for X, y in data_iter:
-        acc_sum +=  (net(X).argmax(dim = 1) == y).float().sum().item() #加起来最后一起除n
+        acc_sum += (net(X).argmax(dim=1) ==
+                    y).float().sum().item()  # 加起来最后一起除n
         n += y.shape[0]
     return acc_sum/n
 
+
 def get_fashion_mnist_labels(labels):
     text_labels = ['t-shirt', 'trouser', 'pullover', 'dress', 'coat',
-    'sandal', 'shirt', 'sneaker', 'bag', 'ankle boot'
-    ]
-    return [ text_labels[int(i)] for i in labels]  #返回5个样本的预测label
-    
+                   'sandal', 'shirt', 'sneaker', 'bag', 'ankle boot'
+                   ]
+    return [text_labels[int(i)] for i in labels]  # 返回5个样本的预测label
+
 #注：由于原书的mxnet中的SoftmaxCrossEntropyLoss在反向传播的时候相对于沿batch维求和了，
 #而PyTorch默认的是求平均，所以用PyTorch计算得到的loss比mxnet小很多
 #大概是maxnet计算得到的1/batch_size这个量级），所以反向传播得到的梯度也小很多，
 #所以为了得到差不多的学习效果，我们把学习率调得成原书的约batch_size倍，原书的学习率为0.5，
 #这里设置成100.0。(之所以这么大，应该是因为d2lzh_pytorch里面的sgd函数在更新的时候除以了batch_size，
 #其实PyTorch在计算loss的时候已经除过一次了，sgd这里应该不用除了)
-def sgd(params , lr , batch_size):
-    for param in params: #需要更新的模型参数
+
+
+def sgd(params, lr, batch_size):
+    for param in params:  # 需要更新的模型参数
         param.data -= lr * param.grad/batch_size
+
 
 def train(net, train_iter, test_iter, loss, num_epochs, batch_size, lr=None, optimizer=None):
     for epoch in range(num_epochs):
@@ -100,7 +117,7 @@ def train(net, train_iter, test_iter, loss, num_epochs, batch_size, lr=None, opt
             elif net.params is not None and net.params[0].grad is not None:
                 for param in net.params:
                     param.grad.data.zero_()
-            
+
             l.backward()
             if optimizer is None:
                 sgd(net.params, lr, batch_size)
@@ -108,11 +125,11 @@ def train(net, train_iter, test_iter, loss, num_epochs, batch_size, lr=None, opt
                 optimizer.step()
 
             train_l_sum += l.item()
-            train_acc_sum += (y_hat.argmax(dim = 1) == y).sum().item()
+            train_acc_sum += (y_hat.argmax(dim=1) == y).sum().item()
             n += y.shape[0]
         test_acc = evaluate_accuracy(test_iter, net)
-        print('epoch %d, loss %.4f, train_acc %.3f, test_acc %.3f' % 
-        (epoch+1, train_l_sum/n, train_acc_sum/n, test_acc))
+        print('epoch %d, loss %.4f, train_acc %.3f, test_acc %.3f' %
+              (epoch+1, train_l_sum/n, train_acc_sum/n, test_acc))
 
 
 def show_fashion_mnist(images, labels):
@@ -125,7 +142,8 @@ def show_fashion_mnist(images, labels):
         f.axes.get_yaxis().set_visible(False)
     plt.show()
 
-if __name__ =='__main__':
+
+if __name__ == '__main__':
     mnist_train = torchvision.datasets.FashionMNIST(root='/mnt/mydisk/data'', train=True, download=True, transform=transforms.ToTensor())
     mnist_test = torchvision.datasets.FashionMNIST(root='/mnt/mydisk/data'', train=False, download=True, transform=transforms.ToTensor())
 
@@ -141,10 +159,10 @@ if __name__ =='__main__':
     else:
         num_workers = 4  # 多线程读取数据
 
-    train_iter = torch.utils.data.DataLoader(mnist_train, batch_size = batch_size, 
-    shuffle = True,num_workers=num_workers)
-    test_iter = torch.utils.data.DataLoader(mnist_test, batch_size = batch_size, 
-    shuffle = True,num_workers=num_workers)
+    train_iter = torch.utils.data.DataLoader(mnist_train, batch_size=batch_size,
+                                             shuffle=True, num_workers=num_workers)
+    test_iter = torch.utils.data.DataLoader(mnist_test, batch_size=batch_size,
+                                            shuffle=True, num_workers=num_workers)
 
     # start = time.time()
     # for X, y in train_iter:
@@ -156,7 +174,7 @@ if __name__ =='__main__':
     num_outputs = 256
     num_hiddens = 100
     net = LinearNet(num_inputs, num_outputs, num_hiddens)
-    
+
     # X = torch.rand((2,5))
     # X_prob = softmax(X)
     # print(X_prob, X_prob.sum(dim=1, keepdim=True))
@@ -170,10 +188,10 @@ if __name__ =='__main__':
     m_state_dict = torch.load('/mnt/mydisk/model/model1.pt')
     net.load_state_dict(m_state_dict)
 
-    X, y = iter(test_iter).next() #取一个batch，即5个样本
+    X, y = iter(test_iter).next()  # 取一个batch，即5个样本
     true_labels = get_fashion_mnist_labels(y.numpy())
     pred_labels = get_fashion_mnist_labels(net(X).argmax(dim=1).numpy())
-    titles = [true + '\n' + pred for true , pred in zip(true_labels, pred_labels)]
-    
+    titles = [true + '\n' + pred for true,
+              pred in zip(true_labels, pred_labels)]
+
     show_fashion_mnist(X[0:9], titles[0:9])
-    
