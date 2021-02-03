@@ -4,7 +4,7 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-01-23 21:50:58
 LastEditors: ZhangHongYu
-LastEditTime: 2021-01-27 11:23:31
+LastEditTime: 2021-01-27 11:51:22
 '''
 import pandas as pd
 import torch
@@ -139,17 +139,19 @@ def train_and_pred(
     num_hiddens = 256
     net = LinearNet(train_features.shape[1], num_outputs, num_hiddens)
     loss = nn.MSELoss()
-    train_ls, _ = train(
-        net, train_features, train_labels,
-        None, None, num_epoches, lr, weight_decay, batch_size, loss
-    )
-    semilogy(range(1, num_epoches+1), train_ls, 'epochs', 'rmse')
-    print('train rmse %f' % train_ls[-1])
-    joblib.dump(net, '/mnt/mydisk/LocalCode/model/PredictPrices/model.json')
+    #train_ls, _ = train(
+    #    net, train_features, train_labels,
+    #    None, None, num_epoches, lr, weight_decay, batch_size, loss
+    #)
+    #semilogy(range(1, num_epoches+1), train_ls, 'epochs', 'rmse')
+    #print('train rmse %f' % train_ls[-1])
+    #joblib.dump(net, '/mnt/mydisk/LocalCode/model/PredictPrices/model.json')
     net = joblib.load('/mnt/mydisk/LocalCode/model/PredictPrices/model.json')
     pred = net(test_features).detach().numpy()
     test_data['SalePrice'] = pd.Series(pred.reshape(1, -1)[0])
-    submission = pd.concat([test_data['Id'], test_data['SalePrice']])
+    submission = pd.DataFrame({
+        'Id': test_data['Id'],
+        'SalePrice': test_data['SalePrice']})
     submission.to_csv('Predict-Prices/data/submission.csv', index=False)
 
 
@@ -174,14 +176,14 @@ if __name__ == '__main__':
     ).view(-1, 1)
 
     # k折交叉验证选择模型并调好超参数
-    k, num_epochs, lr, weight_decayay, batch_size = 5, 100, 5, 0, 64
+    k, num_epochs, lr, weight_decay, batch_size = 5, 1000, 0.5, 0, 64
     train_l, valid_l = k_fold(
         k, train_features, train_labels,
-        num_epochs, lr, weight_decayay, batch_size)
+        num_epochs, lr, weight_decay, batch_size)
     print("%d-fold validation:avg train rmse %f, avg valid rmse %f" % (
         k, train_l, valid_l))
 
     # 以上只是用，下面才是真的训练并预测
-    train_and_pred(
-        train_features, test_features, train_labels, test_data,
-        num_epochs, lr, weight_decayay, batch_size)
+    # train_and_pred(
+    #     train_features, test_features, train_labels, test_data,
+    #     num_epochs, lr, weight_decay, batch_size)

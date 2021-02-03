@@ -4,7 +4,7 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-01-22 21:27:38
 LastEditors: ZhangHongYu
-LastEditTime: 2021-01-22 22:53:54
+LastEditTime: 2021-02-03 11:23:09
 '''
 import torch
 import torch.nn as nn
@@ -80,6 +80,7 @@ if __name__ == '__main__':
 
     batch_size, num_epochs, lr = 1, 100, 0.003
     net = LinearNet(num_inputs, 1)
+
     loss = nn.MSELoss()
     dataset = torch.utils.data.TensorDataset(train_features, train_labels)
     train_iter = torch.utils.data.DataLoader(dataset, batch_size)
