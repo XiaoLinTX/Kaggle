@@ -1,10 +1,10 @@
 '''
-Descripttion: 
+Descripttion: rnn的从零实现
 Version: 1.0
 Author: ZhangHongYu
 Date: 2021-02-10 11:22:20
 LastEditors: ZhangHongYu
-LastEditTime: 2021-02-11 01:21:08
+LastEditTime: 2021-02-12 23:46:34
 '''
 
 import time
@@ -150,7 +150,7 @@ def train_and_predict_rnn(
     for epoch in range(num_epochs):
         if not is_random_iter:
             # 如使用相邻采样，有必要在epoch开始时初始化隐藏状态
-            state = init_rnn_state(batch_size, num_epochs, device)
+            state = init_rnn_state(batch_size, num_hiddens, device)
         l_sum, n, start = 0.0, 0, time.time()
         data_iter = data_iter_fn(corpus_indices, batch_size, num_steps, device)
         for X, Y in data_iter:
@@ -174,10 +174,11 @@ def train_and_predict_rnn(
             # 使用交叉熵损失计算平均分类误差
             loss_v = loss(outputs, y.long())
             # print(loss_v)
-            #print(y.shape[0])
+            # print(y.shape[0])
             # # 梯度清0
             # if rnn.parameters()[0].grad is not None:
             for param in rnn.parameters():
+                print(param)
                 param.grad.data.zero_()
 
             loss_v.backward()
