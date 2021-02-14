@@ -4,7 +4,7 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-02-10 11:22:20
 LastEditors: ZhangHongYu
-LastEditTime: 2021-02-12 23:46:34
+LastEditTime: 2021-02-14 11:42:10
 '''
 
 import time
@@ -178,7 +178,6 @@ def train_and_predict_rnn(
             # # 梯度清0
             # if rnn.parameters()[0].grad is not None:
             for param in rnn.parameters():
-                print(param)
                 param.grad.data.zero_()
 
             loss_v.backward()

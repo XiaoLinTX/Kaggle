@@ -4,12 +4,14 @@ Version: 1.0
 Author: ZhangHongYu
 Date: 2021-02-12 16:32:31
 LastEditors: ZhangHongYu
-LastEditTime: 2021-02-13 00:14:32
+LastEditTime: 2021-02-13 23:58:21
 '''
 import numpy as np
 import torch
 from rnn import train_and_predict_rnn, init_rnn_state
+from rnn_easy import train_and_predict_rnn_pytorch
 from torch import nn, optim
+from rnn import to_onehot
 import torch.nn.functional as F
 from sampling import load_data_jay_lyrics
 
@@ -70,15 +72,43 @@ class GRU(nn.Module):
         return outputs, (H,)
 
 
+# 本类已保存在d2lzh_pytorch包中方便以后使用
+class RNNModel(nn.Module):
+    def __init__(self, rnn_layer, vocab_size):
+        super(RNNModel, self).__init__()
+        self.rnn = rnn_layer
+        self.hidden_size = rnn_layer.hidden_size * (2 if rnn_layer.bidirectional else 1) 
+        self.vocab_size = vocab_size
+        self.dense = nn.Linear(self.hidden_size, vocab_size)
+        self.state = None
+
+    def forward(self, inputs, state): # inputs: (batch, seq_len)
+        # 获取one-hot向量表示
+        X = to_onehot(inputs, self.vocab_size) # X是个list
+        Y, self.state = self.rnn(torch.stack(X), state)
+        # 全连接层会首先将Y的形状变成(num_steps * batch_size, num_hiddens)，它的输出
+        # 形状为(num_steps * batch_size, vocab_size)
+        output = self.dense(Y.view(-1, Y.shape[-1]))
+        return output, self.state
+
 if __name__ == '__main__':
     num_epochs, num_steps, batch_size, lr, clipping_theta = 160, 35, 32, 1e2, 1e-2
     pred_period, pred_len, prefixes = 40, 50, ['分开', '不分开']
     (corpus_indices, char_to_idx, idx_to_char, vocab_size) = load_data_jay_lyrics()
     num_inputs, num_hiddens, num_outputs = vocab_size, 256, vocab_size
-    gru = GRU(num_inputs, num_hiddens, num_outputs)
-    train_and_predict_rnn(
-        gru, init_rnn_state, num_hiddens,
-        vocab_size, device, corpus_indices, idx_to_char,
-        char_to_idx, False, num_epochs, num_steps, lr,
-        clipping_theta, batch_size, pred_period, pred_len,
-        prefixes)
+    # gru = GRU(num_inputs, num_hiddens, num_outputs)
+    gru_layer = nn. GRU(input_size=vocab_size, hidden_size=num_hiddens)
+    model = RNNModel(gru_layer, vocab_size).to(device)
+    # train_and_predict_rnn(
+    #     model, init_rnn_state, num_hiddens,
+    #     vocab_size, device, corpus_indices, idx_to_char,
+    #     char_to_idx, False, num_epochs, num_steps, lr,
+    #     clipping_theta, batch_size, pred_period, pred_len,
+    #     prefixes)
+
+    train_and_predict_rnn_pytorch(
+            model, num_hiddens, vocab_size, device,
+            corpus_indices, idx_to_char, char_to_idx,
+            num_epochs, num_steps, lr, clipping_theta,
+            batch_size, pred_period, pred_len, prefixes
+    )
